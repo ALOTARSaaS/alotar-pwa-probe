@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <title>ALOTAR · V67V249ZL48L · External HTTP Routing Probe</title>
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+    *{box-sizing:border-box}body{margin:0;background:#101722;color:#f3f5f8;padding:24px 16px}
+    main{max-width:780px;margin:auto}h1{font-size:clamp(1.3rem,4vw,1.9rem);margin:0 0 8px}
+    p{color:#c3cbd8;line-height:1.55}button{background:#d6ae62;color:#111;border:0;border-radius:10px;padding:12px 20px;font-weight:700;cursor:pointer}
+    button:disabled{opacity:.6;cursor:wait}.status{margin:18px 0;font-weight:700}.result{background:#1c2735;border:1px solid #344255;border-radius:12px;padding:14px;margin:12px 0}
+    .pass{color:#8ee0ac}.fail{color:#ff9c9c}.pending{color:#e5c98e}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.83rem;margin-bottom:0}
+    small{color:#b9c5d5}code{color:#ead29c}
+  </style>
+</head>
+<body>
+<main>
+  <h1>ALOTAR · V67V249ZL48L</h1>
+  <p>External HTTP Routing Runtime Verification · GitHub Pages → Google Apps Script /exec</p>
+  <p><strong>STRICT INERT PROBE</strong> · Sin autenticación · Sin session tokens · Sin writers · Sin acciones productivas. Cuatro solicitudes con una acción inexistente.</p>
+  <button id="run" type="button">Ejecutar prueba de routing</button>
+  <div id="status" class="status pending" role="status">Pendiente. Ninguna solicitud enviada.</div>
+  <div id="results" aria-live="polite"></div>
+  <p><small>Se usa <code>POST</code>, <code>Content-Type: text/plain;charset=UTF-8</code>, <code>credentials: omit</code> y <code>redirect: follow</code>. No se almacenan datos ni se registran URLs de redirección.</small></p>
+</main>
+<script>
+'use strict';
+(function(){
+  const ENDPOINT='https://script.google.com/macros/s/AKfycbxhpU7b6Kaw04Ces-YuvILmOeQ3RsLSYkap8fBKoRJyVjFSZl4rfEOugcARguv9_M9_aQ/exec';
+  const ACTION='__ALOTAR_ZL48L_INERT_UNKNOWN__';
+  const CASES=[
+    {name:'Public heredado (sin channel)',request:{action:ACTION},expected:'ACTION_NOT_ALLOWED',kind:'public'},
+    {name:'Public explícito',request:{channel:'public',action:ACTION},expected:'ACTION_NOT_ALLOWED',kind:'public'},
+    {name:'Provider explícito',request:{channel:'provider',action:ACTION},expected:'REQUEST_REJECTED',kind:'transport'},
+    {name:'Canal inválido',request:{channel:'invalid',action:ACTION},expected:'INVALID_CHANNEL',kind:'transport'}
+  ];
+  const run=document.getElementById('run'),status=document.getElementById('status'),results=document.getElementById('results');
+  function node(tag,text,cls){const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;return el;}
+  function errorCode(body,kind){
+    if(!body||typeof body!=='object'||Array.isArray(body))return null;
+    if(kind==='public')return typeof body.error==='string'?body.error:null;
+    return body.error&&typeof body.error==='object'&&typeof body.error.code==='string'?body.error.code:null;
+  }
+  async function one(test){
+    const started=performance.now();
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),20000);
+    try{
+      const response=await fetch(ENDPOINT,{
+        method:'POST',mode:'cors',credentials:'omit',redirect:'follow',cache:'no-store',
+        headers:{'Content-Type':'text/plain;charset=UTF-8'},
+        body:JSON.stringify(test.request),signal:controller.signal
+      });
+      const raw=await response.text();
+      let parsed=null;
+      try{parsed=JSON.parse(raw);}catch(_){/* report non-JSON */}
+      const observed=errorCode(parsed,test.kind);
+      const pass=response.status===200&&response.ok&&parsed&&parsed.ok===false&&observed===test.expected;
+      return {name:test.name,pass:!!pass,http_status:response.status,response_type:response.type,
+        response_origin:(()=>{try{return new URL(response.url).origin;}catch(_){return 'unknown';}})(),
+        expected:test.expected,observed:observed||'UNREADABLE_OR_DIFFERENT_CONTRACT',
+        elapsed_ms:Math.round(performance.now()-started)};
+    }catch(e){return {name:test.name,pass:false,expected:test.expected,observed:'FETCH_REJECTED',
+      error_name:e&&e.name||'Error',error_message:e&&e.message||'Unknown error',
+      elapsed_ms:Math.round(performance.now()-started)};}
+    finally{clearTimeout(timeout);}
+  }
+  run.addEventListener('click',async()=>{
+    run.disabled=true;results.replaceChildren();status.className='status pending';status.textContent='Ejecutando 4 solicitudes inocuas...';
+    const output=[];
+    try{
+      for(const test of CASES){
+        const r=await one(test);output.push(r);
+        const card=node('section','', 'result');
+        card.appendChild(node('strong',(r.pass?'PASS · ':'FAIL · ')+r.name,r.pass?'pass':'fail'));
+        card.appendChild(node('pre',JSON.stringify(r,null,2)));
+        results.appendChild(card);
+      }
+      const passed=output.filter(x=>x.pass).length;
+      status.className='status '+(passed===4?'pass':'fail');
+      status.textContent='V67V249ZL48L · '+passed+'/4 PASS · '+(passed===4?'EXTERNAL_ROUTING_PROBE_PASS':'REVIEW_REQUIRED');
+      const summary={version:'V67V249ZL48L',origin:location.origin,method:'POST',content_type:'text/plain;charset=UTF-8',
+        no_auth:true,no_session_tokens:true,no_productive_actions:true,passed,total:4,results:output};
+      const box=node('section','', 'result');box.appendChild(node('strong','Resumen para compartir'));
+      box.appendChild(node('pre',JSON.stringify(summary,null,2)));results.appendChild(box);
+    }finally{run.disabled=false;}
+  });
+})();
+</script>
+</body>
+</html>
