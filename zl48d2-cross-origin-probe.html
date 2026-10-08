@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALOTAR · ZL48D2 Cross-Origin Probe</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:32px auto;padding:0 16px;background:#0b0c0f;color:#eee}
+button{padding:12px 18px;font-size:16px;cursor:pointer}
+pre{white-space:pre-wrap;word-break:break-word;background:#15171c;padding:16px;border-radius:10px}
+.ok{color:#8ee6a3} .bad{color:#ff9a9a}
+</style>
+</head>
+<body>
+<h1>ALOTAR · V67V249ZL48D2</h1>
+<p>CONTROLLED CROSS-ORIGIN BROWSER TRANSPORT PROBE</p>
+<p><strong>NO AUTH · NO SESSION TOKEN · NO PRODUCTIVE ACTION · NO WRITER</strong></p>
+<button id="run">Ejecutar probe</button>
+<pre id="out">Pendiente.</pre>
+<script>
+const ENDPOINT='https://script.google.com/macros/s/AKfycbxhpU7b6Kaw04Ces-YuvILmOeQ3RsLSYkap8fBKoRJyVjFSZl4rfEOugcARguv9_M9_aQ/exec';
+const SAFE_BODY=JSON.stringify({});
+
+function originOf(u){try{return new URL(u).origin}catch(e){return null}}
+function cleanError(e){return {name:String(e&&e.name||''),message:String(e&&e.message||e||'')}}
+
+async function attempt(label, contentType){
+  const started=performance.now();
+  try{
+    const r=await fetch(ENDPOINT,{
+      method:'POST',
+      headers:{'Content-Type':contentType},
+      body:SAFE_BODY,
+      redirect:'follow',
+      credentials:'omit',
+      cache:'no-store'
+    });
+    let body=null, bodyReadError=null;
+    try{body=await r.text()}catch(e){bodyReadError=cleanError(e)}
+    return {
+      label,
+      outcome:'RESOLVED',
+      status:r.status,
+      ok:r.ok,
+      redirected:r.redirected,
+      response_url:r.url,
+      response_origin:originOf(r.url),
+      response_type:r.type,
+      body_readable:bodyReadError===null,
+      body:body,
+      body_read_error:bodyReadError,
+      elapsed_ms:Math.round(performance.now()-started)
+    };
+  }catch(e){
+    return {
+      label,
+      outcome:'REJECTED',
+      error:cleanError(e),
+      elapsed_ms:Math.round(performance.now()-started)
+    };
+  }
+}
+
+async function run(){
+  const out=document.getElementById('out');
+  const button=document.getElementById('run');
+  button.disabled=true;
+  out.textContent='Ejecutando…';
+  const report={
+    version:'V67V249ZL48D2',
+    probe_origin:location.origin,
+    probe_url:location.href,
+    endpoint:ENDPOINT,
+    secure_context:window.isSecureContext,
+    body:'{}',
+    safety:'INVALID/NON-ACTION ENVELOPE ONLY · NO AUTH · NO SESSION · NO PRODUCTIVE RPC INTENDED',
+    attempts:[]
+  };
+  report.attempts.push(await attempt('APPLICATION_JSON','application/json'));
+  report.attempts.push(await attempt('TEXT_PLAIN','text/plain;charset=UTF-8'));
+  report.classification={
+    application_json_readable:report.attempts[0].outcome==='RESOLVED' && report.attempts[0].body_readable,
+    text_plain_readable:report.attempts[1].outcome==='RESOLVED' && report.attempts[1].body_readable
+  };
+  out.textContent=JSON.stringify(report,null,2);
+  button.disabled=false;
+}
+document.getElementById('run').addEventListener('click',run);
+</script>
+</body>
+</html>
